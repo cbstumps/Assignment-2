@@ -7,7 +7,7 @@ const int screenHeight = 135;
 uint16_t rowBuffer[screenWidth];
 
 // Choose transition here (0 = none / instant, 1 = fade-in, 2 = horizontal wipe, 3 = vertical wipe)
-#define TRANSITION_TYPE 1   // <-- Change this number to try different effects
+#define TRANSITION_TYPE 3   // <-- Change this number to try different effects
 
 // For fade-in: number of steps (higher = smoother but slower)
 const int FADE_STEPS = 4;
@@ -119,7 +119,7 @@ void fadeIn(uint16_t* imgBuf) {
 }
 
 void horizontalWipe(uint16_t* imgBuf) {
-    const int steps = 4;  // wider steps = faster
+    const int steps = 1;  // wider steps = faster
     for (int col = 0; col <= screenWidth; col += steps) {
         for (int y = 0; y < screenHeight; y++) {
             int drawWidth = min(steps, screenWidth - col);
@@ -133,10 +133,11 @@ void horizontalWipe(uint16_t* imgBuf) {
 }
 
 void verticalWipe(uint16_t* imgBuf) {
-    // Similar to your original row-by-row, but controlled speed
+    const int delayPerRowMs = 1;   // speed
+
     for (int y = 0; y < screenHeight; y++) {
         memcpy(rowBuffer, imgBuf + y * screenWidth, screenWidth * 2);
         StickCP2.Display.pushImage(0, y, screenWidth, 1, rowBuffer);
-        delay(8);  // ~1 second total – feels smooth
+        delay(delayPerRowMs);   // Controls how fast each row appears
     }
 }
