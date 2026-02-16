@@ -11,7 +11,7 @@ const uint16_t PROGRESS_FILL_COLOR = GREENYELLOW;
 uint16_t rowBuffer[screenWidth];
 
 // Choose transition here (0 = none / instant, 1 = fade-in, 2 = horizontal wipe, 3 = vertical wipe)
-#define TRANSITION_TYPE 1   // <-- Change this number to try different effects
+#define TRANSITION_TYPE 2   // <-- Change this number to try different effects
 
 // For fade-in: number of steps (higher = smoother but slower)
 const int FADE_STEPS = 32;
