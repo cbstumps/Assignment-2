@@ -10,7 +10,7 @@ uint16_t rowBuffer[screenWidth];
 #define TRANSITION_TYPE 1   // <-- Change this number to try different effects
 
 // For fade-in: number of steps (higher = smoother but slower)
-const int FADE_STEPS = 8;
+const int FADE_STEPS = 4;
 
 void setup() {
     Serial.setRxBufferSize(2048);  // ← Add / increase this
@@ -119,7 +119,7 @@ void fadeIn(uint16_t* imgBuf) {
 }
 
 void horizontalWipe(uint16_t* imgBuf) {
-    const int steps = 32;  // wider steps = faster
+    const int steps = 4;  // wider steps = faster
     for (int col = 0; col <= screenWidth; col += steps) {
         for (int y = 0; y < screenHeight; y++) {
             int drawWidth = min(steps, screenWidth - col);
@@ -128,7 +128,7 @@ void horizontalWipe(uint16_t* imgBuf) {
                 StickCP2.Display.pushImage(col, y, drawWidth, 1, rowBuffer);
             }
         }
-        delay(15);  // Adjust speed
+        delay(5);  // Adjust speed
     }
 }
 
