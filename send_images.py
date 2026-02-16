@@ -44,8 +44,8 @@ def process_and_send(file_path, ser):
             for x in range(WIDTH):
                 r, g, b = img.getpixel((x, y))
                 rgb565 = ((r & 0xF8) << 8) | ((g & 0xFC) << 3) | (b >> 3)
-                row_data.append(rgb565 & 0xFF)
-                row_data.append((rgb565 >> 8) & 0xFF)
+                row_data.append((rgb565 >> 8) & 0xFF)   # high byte FIRST
+                row_data.append(rgb565 & 0xFF)          # low byte second
 
             ser.write(row_data)
             ser.flush()
