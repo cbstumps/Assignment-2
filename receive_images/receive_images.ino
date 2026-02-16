@@ -2,6 +2,10 @@
 
 const int screenWidth  = 240;
 const int screenHeight = 135;
+const int PROGRESS_BAR_HEIGHT = 10;
+const int PROGRESS_BAR_Y = screenHeight - PROGRESS_BAR_HEIGHT;  // bottom of screen
+const uint16_t PROGRESS_BG_COLOR   = BLACK;
+const uint16_t PROGRESS_FILL_COLOR = GREENYELLOW;
 
 // Buffer to hold one full row of pixels
 uint16_t rowBuffer[screenWidth];
@@ -24,43 +28,62 @@ void setup() {
     StickCP2.Display.drawCenterString("Ready for Serial Images", 120, 60);
 }
 
+void drawProgressBar(int currentRow, int totalRows) {
+    // Background (clear previous bar)
+    StickCP2.Display.fillRect(0, PROGRESS_BAR_Y, screenWidth, PROGRESS_BAR_HEIGHT, PROGRESS_BG_COLOR);
+
+    // Calculate fill width
+    int fillWidth = (currentRow * screenWidth) / totalRows;
+
+    // Draw filled portion
+    if (fillWidth > 0) {
+        StickCP2.Display.fillRect(0, PROGRESS_BAR_Y, fillWidth, PROGRESS_BAR_HEIGHT, PROGRESS_FILL_COLOR);
+    }
+
+    // Optional: thin white border
+    StickCP2.Display.drawRect(0, PROGRESS_BAR_Y, screenWidth, PROGRESS_BAR_HEIGHT, WHITE);
+}
+
 void loop() {
     if (Serial.available()) {
         String cmd = Serial.readStringUntil('\n');
         cmd.trim();
 
         if (cmd == "START") {
-            // We'll collect the full image first into a temporary buffer
-            // (135 rows × 240 pixels × 2 bytes = ~64 KB — fits comfortably in PSRAM/heap)
             uint16_t* imageBuffer = new uint16_t[screenWidth * screenHeight];
-
             if (!imageBuffer) {
-                Serial.println("Memory allocation failed!");
-                return;
-            }
+            Serial.println("Memory allocation failed!");
+            return;
+        }
 
-            for (int y = 0; y < screenHeight; y++) {
-                Serial.println("NEXT_ROW");  // Tell Python we're ready
+        // Optional: clear screen or show "Receiving..." message
+        StickCP2.Display.fillScreen(BLACK);
+        StickCP2.Display.drawCenterString("Receiving image...", 120, 50);
 
-                uint32_t timeout = millis();
-                while (Serial.available() < screenWidth * 2) {
-                    if (millis() - timeout > 500) {
-                        Serial.println("Timeout waiting for row!");
-                        delete[] imageBuffer;
-                        return;
-                    }
+        for (int y = 0; y < screenHeight; y++) {
+            Serial.println("NEXT_ROW");
+
+            uint32_t timeout = millis();
+            while (Serial.available() < screenWidth * 2) {
+                if (millis() - timeout > 500) {
+                    Serial.println("Timeout waiting for row!");
+                    delete[] imageBuffer;
+                    return;
                 }
-
-                Serial.readBytes((uint8_t*)(imageBuffer + y * screenWidth), screenWidth * 2);
             }
 
-            Serial.println("OK");  // Image fully received
+            Serial.readBytes((uint8_t*)(imageBuffer + y * screenWidth), screenWidth * 2);
 
-            // Now apply the chosen transition
-            applyTransition(imageBuffer);
+            // Update progress bar after receiving this row
+            drawProgressBar(y + 1, screenHeight);   // y+1 because we just finished this row
+        }
 
-            // Clean up
-            delete[] imageBuffer;
+        Serial.println("OK");
+
+        // Now apply transition (your existing code)
+        applyTransition(imageBuffer);
+
+        delete[] imageBuffer;
         }
     }
 }

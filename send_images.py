@@ -85,8 +85,8 @@ if __name__ == "__main__":
             if not success:
                 print("Aborting remaining images due to error.")
                 break
-            print("Pausing 3 seconds...\n")
-            time.sleep(3)
+            print("Pausing 5 seconds...\n")
+            time.sleep(5)
 
         ser.close()
         print("Done!")
