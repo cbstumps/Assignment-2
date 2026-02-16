@@ -7,10 +7,10 @@ const int screenHeight = 135;
 uint16_t rowBuffer[screenWidth];
 
 // Choose transition here (0 = none / instant, 1 = fade-in, 2 = horizontal wipe, 3 = vertical wipe)
-#define TRANSITION_TYPE 3   // <-- Change this number to try different effects
+#define TRANSITION_TYPE 1   // <-- Change this number to try different effects
 
 // For fade-in: number of steps (higher = smoother but slower)
-const int FADE_STEPS = 4;
+const int FADE_STEPS = 32;
 
 void setup() {
     Serial.setRxBufferSize(2048);  // ← Add / increase this
@@ -133,7 +133,7 @@ void horizontalWipe(uint16_t* imgBuf) {
 }
 
 void verticalWipe(uint16_t* imgBuf) {
-    const int delayPerRowMs = 1;   // speed
+    const int delayPerRowMs = 32;   // speed (higher = slower)
 
     for (int y = 0; y < screenHeight; y++) {
         memcpy(rowBuffer, imgBuf + y * screenWidth, screenWidth * 2);
