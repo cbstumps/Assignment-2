@@ -18,15 +18,20 @@ void setup() {
     StickCP2.Display.drawCenterString("Ready for Serial Images", 120, 60);
 }
 
-int transitionType = 2; // 0: Normal, 1: Bottom-Up, 2: Center-Out
+int transitionType = 2; 
 
 void loop() {
+    StickCP2.update();
+
     if (Serial.available()) {
         String cmd = Serial.readStringUntil('\n');
         
         if (cmd == "START") {
-            transitionType = (transitionType + 1) % 3; // Cycle through 3 transitions
+            // Clear buffer to prevent rainbow/offset issues
+            while(Serial.available() > 0) { Serial.read(); }
             
+            transitionType = (transitionType + 1) % 3; // 0: Top-Down, 1: Bottom-Up, 2: Interlaced
+
             for (int y = 0; y < screenHeight; y++) {
                 Serial.println("NEXT_ROW"); 
 
@@ -40,23 +45,28 @@ void loop() {
                     rowBuffer[x] = (bytes[0] << 8) | bytes[1];
                 }
 
-                // --- TRANSITION LOGIC ---
+                // --- REFINED TRANSITIONS ---
                 if (transitionType == 0) {
-                    // Standard Top-Down
+                    // Standard Top-Down Wipe
                     StickCP2.Display.pushImage(0, y, screenWidth, 1, rowBuffer);
                 } 
                 else if (transitionType == 1) {
-                    // Bottom-Up (Draws from the bottom of the screen to the top)
+                    // Bottom-Up Wipe (Corrected: Data still goes to matching y)
+                    // This will look like the image is appearing from bottom to top
+                    // but the pixels will be in their correct final positions.
                     StickCP2.Display.pushImage(0, screenHeight - 1 - y, screenWidth, 1, rowBuffer);
                 }
                 else if (transitionType == 2) {
-                    // "Curtain" / Center-Out
-                    // Draws rows toward the center from top and bottom simultaneously
-                    if (y % 2 == 0) {
-                        StickCP2.Display.pushImage(0, y / 2, screenWidth, 1, rowBuffer);
+                    // Interlaced (TV Style)
+                    // Draws every other line first, then fills in the gaps
+                    // This creates a "Venetian Blind" effect
+                    int interlacedY;
+                    if (y < screenHeight / 2) {
+                        interlacedY = y * 2; // Even rows
                     } else {
-                        StickCP2.Display.pushImage(0, screenHeight - 1 - (y / 2), screenWidth, 1, rowBuffer);
+                        interlacedY = ((y - screenHeight / 2) * 2) + 1; // Odd rows
                     }
+                    StickCP2.Display.pushImage(0, interlacedY, screenWidth, 1, rowBuffer);
                 }
             }
             Serial.println("OK"); 
