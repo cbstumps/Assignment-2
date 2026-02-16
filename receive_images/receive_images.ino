@@ -18,7 +18,7 @@ void setup() {
     StickCP2.Display.drawCenterString("Ready for Serial Images", 120, 60);
 }
 
-int transitionType = 0; // 0: Normal, 1: Bottom-Up, 2: Center-Out
+int transitionType = 2; // 0: Normal, 1: Bottom-Up, 2: Center-Out
 
 void loop() {
     if (Serial.available()) {
