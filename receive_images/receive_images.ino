@@ -13,13 +13,13 @@ uint16_t rowBuffer[screenWidth];
 const int FADE_STEPS = 8;
 
 void setup() {
+    Serial.setRxBufferSize(2048);  // ← Add / increase this
+    Serial.begin(115200);
+
     auto cfg = M5.config();
     StickCP2.begin(cfg);
     StickCP2.Display.setRotation(1);
     StickCP2.Display.fillScreen(BLACK);
-
-    Serial.begin(115200);
-    Serial.setRxBufferSize(1024);
 
     StickCP2.Display.drawCenterString("Ready for Serial Images", 120, 60);
 }
