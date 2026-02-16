@@ -6,7 +6,7 @@ import os
 # --- CONFIGURATION ---
 PORT = 'COM4'  # <--- DOUBLE CHECK THIS matches Arduino IDE
 BAUD_RATE = 115200
-IMG_FOLDER = './images' 
+IMG_FOLDER = './images_2' 
 WIDTH = 240 
 HEIGHT = 135
 

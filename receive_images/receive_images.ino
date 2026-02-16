@@ -18,18 +18,20 @@ void setup() {
     StickCP2.Display.drawCenterString("Ready for Serial Images", 120, 60);
 }
 
+int transitionType = 0; // 0: Normal, 1: Bottom-Up, 2: Center-Out
+
 void loop() {
     if (Serial.available()) {
         String cmd = Serial.readStringUntil('\n');
         
         if (cmd == "START") {
+            transitionType = (transitionType + 1) % 3; // Cycle through 3 transitions
+            
             for (int y = 0; y < screenHeight; y++) {
-                // SYNC: Tell Python we are ready for the next row
                 Serial.println("NEXT_ROW"); 
 
                 for (int x = 0; x < screenWidth; x++) {
                     uint8_t bytes[2];
-                    // Wait for 2 bytes with a timeout to prevent freezing
                     uint32_t timeout = millis();
                     while(Serial.available() < 2) {
                         if(millis() - timeout > 500) break; 
@@ -37,7 +39,25 @@ void loop() {
                     Serial.readBytes(bytes, 2);
                     rowBuffer[x] = (bytes[0] << 8) | bytes[1];
                 }
-                StickCP2.Display.pushImage(0, y, screenWidth, 1, rowBuffer);
+
+                // --- TRANSITION LOGIC ---
+                if (transitionType == 0) {
+                    // Standard Top-Down
+                    StickCP2.Display.pushImage(0, y, screenWidth, 1, rowBuffer);
+                } 
+                else if (transitionType == 1) {
+                    // Bottom-Up (Draws from the bottom of the screen to the top)
+                    StickCP2.Display.pushImage(0, screenHeight - 1 - y, screenWidth, 1, rowBuffer);
+                }
+                else if (transitionType == 2) {
+                    // "Curtain" / Center-Out
+                    // Draws rows toward the center from top and bottom simultaneously
+                    if (y % 2 == 0) {
+                        StickCP2.Display.pushImage(0, y / 2, screenWidth, 1, rowBuffer);
+                    } else {
+                        StickCP2.Display.pushImage(0, screenHeight - 1 - (y / 2), screenWidth, 1, rowBuffer);
+                    }
+                }
             }
             Serial.println("OK"); 
         }
