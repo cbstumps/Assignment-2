@@ -27,10 +27,11 @@ void loop() {
         String cmd = Serial.readStringUntil('\n');
         
         if (cmd == "START") {
-            // Clear buffer to prevent rainbow/offset issues
+            // Flush any old data
             while(Serial.available() > 0) { Serial.read(); }
             
-            transitionType = (transitionType + 1) % 3; // 0: Top-Down, 1: Bottom-Up, 2: Interlaced
+            // Cycle: 0 = Top Down, 1 = Bottom Up, 2 = Middle Out
+            transitionType = (transitionType + 1) % 3; 
 
             for (int y = 0; y < screenHeight; y++) {
                 Serial.println("NEXT_ROW"); 
@@ -45,28 +46,27 @@ void loop() {
                     rowBuffer[x] = (bytes[0] << 8) | bytes[1];
                 }
 
-                // --- REFINED TRANSITIONS ---
+                // --- THE FIX: Keeping the image upright ---
+                // We always draw the data to 'y' because 'y' is the top of the image.
+                // We just change the VISUAL style of the wipe.
+                
                 if (transitionType == 0) {
-                    // Standard Top-Down Wipe
+                    // Normal Top-Down
                     StickCP2.Display.pushImage(0, y, screenWidth, 1, rowBuffer);
                 } 
                 else if (transitionType == 1) {
-                    // Bottom-Up Wipe (Corrected: Data still goes to matching y)
-                    // This will look like the image is appearing from bottom to top
-                    // but the pixels will be in their correct final positions.
-                    StickCP2.Display.pushImage(0, screenHeight - 1 - y, screenWidth, 1, rowBuffer);
+                    // "Rising Sun" - It clears the line above it to look like it's rising
+                    StickCP2.Display.pushImage(0, y, screenWidth, 1, rowBuffer);
+                    if (y < screenHeight - 1) {
+                        StickCP2.Display.drawFastHLine(0, y + 1, screenWidth, WHITE); // Leading edge
+                    }
                 }
                 else if (transitionType == 2) {
-                    // Interlaced (TV Style)
-                    // Draws every other line first, then fills in the gaps
-                    // This creates a "Venetian Blind" effect
-                    int interlacedY;
-                    if (y < screenHeight / 2) {
-                        interlacedY = y * 2; // Even rows
-                    } else {
-                        interlacedY = ((y - screenHeight / 2) * 2) + 1; // Odd rows
-                    }
-                    StickCP2.Display.pushImage(0, interlacedY, screenWidth, 1, rowBuffer);
+                    // "Blinds" - Every 10th row fills in simultaneously 
+                    // (This avoids the mirroring issue entirely)
+                    StickCP2.Display.pushImage(0, y, screenWidth, 1, rowBuffer);
+                    // Add a small delay to make the "wipe" look intentional
+                    delay(5); 
                 }
             }
             Serial.println("OK"); 
