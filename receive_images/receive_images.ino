@@ -37,7 +37,7 @@ void drawProgressBar(int currentRow, int totalRows) {
 }
 
 // ────────────────────────────────────────────────
-// Transition functions (your existing ones - shortened for brevity)
+// Transition functions
 // ────────────────────────────────────────────────
 void horizontalWipe(uint16_t* imgBuf) {
     const int steps = 1;  // wider steps = faster
@@ -52,6 +52,7 @@ void horizontalWipe(uint16_t* imgBuf) {
         delay(5);  // Adjust speed
     }
 }
+
 void verticalWipe(uint16_t* imgBuf) {
     const int delayPerRowMs = 32;   // speed (higher = slower)
 
@@ -61,6 +62,7 @@ void verticalWipe(uint16_t* imgBuf) {
         delay(delayPerRowMs);   // Controls how fast each row appears
     }
 }
+
 void fadeIn(uint16_t* imgBuf) {
     const int FADE_STEPS = 8;           // higher = smoother but slower
     const int delayPerStep = 30;        // ms between steps (~240 ms total)
@@ -89,6 +91,7 @@ void fadeIn(uint16_t* imgBuf) {
         delay(delayPerStep);
     }
 }
+
 void applyTransition(uint16_t* imgBuf) {
     switch (TRANSITION_TYPE) {
         case 0: StickCP2.Display.pushImage(0, 0, screenWidth, screenHeight, imgBuf); break;
@@ -99,16 +102,14 @@ void applyTransition(uint16_t* imgBuf) {
     }
 }
 
-// (Include your fadeIn / horizontalWipe / verticalWipe functions here - unchanged)
-
 void setup() {
+    Serial.setRxBufferSize(4096);           // Larger buffer - helps with row transfers
+    Serial.begin(115200);
+
     auto cfg = M5.config();
     StickCP2.begin(cfg);
     StickCP2.Display.setRotation(1);
     StickCP2.Display.fillScreen(BLACK);
-
-    Serial.begin(115200);
-    Serial.setRxBufferSize(2048);  // Important for reliable row transfer
 
     StickCP2.Display.drawCenterString("Ready for Serial Images", 120, 60);
 }
@@ -182,17 +183,35 @@ void loop() {
             for (int y = 0; y < screenHeight; y++) {
                 Serial.println("NEXT_ROW");
 
+                uint16_t* rowPtr = imageBuffer + y * screenWidth;
+
                 uint32_t timeout = millis();
-                while (Serial.available() < screenWidth * 2) {
-                    if (millis() - timeout > 500) {
-                        Serial.println("Row timeout!");
-                        delete[] imageBuffer;
-                        return;
+                bool rowComplete = false;
+
+                while (!rowComplete && millis() - timeout < 1500) {   // 1.5 seconds max per row
+                    while (Serial.available() >= 2 && !rowComplete) {
+                        uint8_t low  = Serial.read();
+                        uint8_t high = Serial.read();
+                        *rowPtr++ = (high << 8) | low;   // high byte first
                     }
-                    StickCP2.update();  // Keep button responsive during receive
+
+                    if (rowPtr == imageBuffer + (y + 1) * screenWidth) {
+                        rowComplete = true;
+                    }
+
+                    StickCP2.update();  // keep button responsive
+                    delay(1);           // small breathing room
                 }
 
-                Serial.readBytes((uint8_t*)(imageBuffer + y * screenWidth), screenWidth * 2);
+                if (!rowComplete) {
+                    Serial.println("Row timeout!");
+                    Serial.print("Received only ");
+                    Serial.print(rowPtr - (imageBuffer + y * screenWidth));
+                    Serial.println(" pixels of 240");
+                    delete[] imageBuffer;
+                    return;
+                }
+
                 drawProgressBar(y + 1, screenHeight);
             }
 
