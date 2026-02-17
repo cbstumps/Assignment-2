@@ -128,6 +128,20 @@ void loop() {
         }
 
         unsigned long heldTime = millis() - pressStart;
+        // Inside loop(), in the button handling section, after detecting long press:
+
+        if (heldTime >= 2000) {  // 2 seconds
+            // Long press detected → send signal to Python
+            Serial.println("BUTTON_HELD_2S");
+            
+            // Optional: visual feedback on screen
+            StickCP2.Display.fillScreen(BLACK);
+            StickCP2.Display.drawCenterString("Next image requested", 120, 60);
+            
+            // Reset press timer so it doesn't spam
+            pressStart = 0;
+            wasPressed = false;
+        }
         if (heldTime >= LONG_PRESS_MS && !waitingForNext) {
             // Long press → next image
             if (currentImageBuffer != nullptr) {
